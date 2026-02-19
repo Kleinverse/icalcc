@@ -32,7 +32,7 @@ S_hat = ica.fit_transform(X)
 ```python
 ica6 = ICALCC(n_components=4, K=6)   # sixth-order cumulants (default)
 ica8 = ICALCC(n_components=4, K=8)   # eighth-order cumulants
-ica4 = ICALCC(n_components=4, K=4)   # equivalent to sklearn cube
+ica4 = ICALCC(n_components=4, K=4)   # LCC V_4 (locally centered, not sklearn cube)
 ```
 
 ### Classical baselines through the same interface
@@ -152,7 +152,7 @@ whitened data reduces to a polynomial in raw moments $m_r = \mathbb{E}[y^r]$.
 
 ### V-statistic formulas (whitened data)
 
-**Order 4** (equivalent to `cube`):
+**Order 4** (locally centered; differs from `cube` by local vs global centering):
 
 $$V_4 \;=\; \frac{21}{64} \;-\; \frac{3}{64}\,m_4$$
 
@@ -175,9 +175,8 @@ afflicts transcendental nonlinearities when source kurtosis is near zero.
 
 ## Replication
 
-The [`experiments/`](experiments/) directory reproduces all tables in the
-companion paper. See [`experiments/README.md`](experiments/README.md) for
-details.
+The [`experiments/`](experiments/) directory contains benchmark scripts.
+See [`experiments/README.md`](experiments/README.md) for details.
 
 
 ## Citation
@@ -185,7 +184,8 @@ details.
 ```bibtex
 @article{saito2026lcc,
   author  = {Saito, Tetsuya},
-  title   = {Locally Centered Cyclic Kernels for Higher-Order Independent Component Analysis},
+  title   = {Locally Centered Cyclic Kernels for Higher-Order
+             Independent Component Analysis},
   journal = {TechRxiv},
   year    = {2026}
 }
