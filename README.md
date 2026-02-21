@@ -10,6 +10,8 @@ ica = ICALCC(n_components=4, K=6)
 S_hat = ica.fit_transform(X)
 ```
 
+For GPU acceleration, see [gpuicalcc](https://github.com/Kleinverse/gpuicalcc).
+
 ## Installation
 
 ```bash
