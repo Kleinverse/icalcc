@@ -1,51 +1,40 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "icalcc"
-version = "0.1.0"
-description = "Higher-order cumulant contrasts for scikit-learn FastICA (6th/8th-order V-statistic extension)"
+version = "0.1.3"
+description = "Locally centered cyclic contrasts for scikit-learn FastICA"
 readme = "README.md"
-license = "MIT"
-requires-python = ">=3.9"
+license = { text = "CC BY 4.0" }
 authors = [
-    { name = "Tetsuya Saito, Ph.D.", email = "ted@kleinverse.io" },
+    { name = "Tetsuya Saito", email = "ted@kleinverse.io" }
 ]
 keywords = [
-    "independent-component-analysis",
-    "blind-source-separation",
-    "higher-order-cumulants",
-    "scikit-learn",
-    "V-statistic",
-    "signal-processing",
+    "ICA", "independent component analysis", "blind source separation",
+    "cumulants", "higher-order statistics"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Scientific/Engineering",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Operating System :: OS Independent",
 ]
+requires-python = ">=3.9"
 dependencies = [
-    "numpy>=1.21",
-    "scikit-learn>=1.2",
+    "numpy>=1.24",
+    "scikit-learn>=1.3",
 ]
 
 [project.urls]
 Homepage = "https://github.com/Kleinverse/icalcc"
 Repository = "https://github.com/Kleinverse/icalcc"
-Issues = "https://github.com/Kleinverse/icalcc/issues"
-
-[project.optional-dependencies]
-test = ["pytest>=7.0"]
+Paper = "https://doi.org/10.36227/techrxiv.XXXXXXX"
 
 [tool.setuptools]
 py-modules = ["icalcc"]
