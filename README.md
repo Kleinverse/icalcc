@@ -12,7 +12,7 @@ S_hat = ica.fit_transform(X)
 
 ## See Also
 
-- [gpuicalcc](https://github.com/Kleinverse/gpuicalcc) — GPU-accelerated version
+- [gpuicalcc](https://github.com/Kleinverse/gpuicalcc) — PyTorch extension (GPU-accelerated version)
 - [Kleinverse Open Research Repository (KORR)](https://github.com/Kleinverse/research/tree/main/lcc) — reseach and experiment code
 
 ## Installation
