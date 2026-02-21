@@ -13,7 +13,7 @@ S_hat = ica.fit_transform(X)
 ## See Also
 
 - [gpuicalcc](https://github.com/Kleinverse/gpuicalcc) — GPU-accelerated version
-- [Kleinverse Open Research Repository (KORR)](https://github.com/Kleinverse/research/lcc) — experiment code and reproduction materials
+- [Kleinverse Open Research Repository (KORR)](https://github.com/Kleinverse/research/lcc) — reseach and experiment code
 
 ## Installation
 
