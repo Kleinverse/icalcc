@@ -64,14 +64,24 @@ print(ica.converged_)  # True if all components converged
 - scikit-learn ≥ 1.3
 
 ## Citation
+
+If you use this package, please cite both the software paper and
+the underlying LCC kernel paper:
 ```bibtex
 @article{saito2026icalcc,
   author  = {Saito, Tetsuya},
   title   = {{ICALCC}: Locally Centered Contrast Functions for
              {FastICA} with {GPU} Acceleration},
-  journal = {IEEE Signal Processing Letters},
-  year    = {2026},
-  note    = {submitted}
+  journal = {TechRxiv},
+  year    = {2026}
+}
+
+@article{saito2026lcc,
+  author  = {Saito, Tetsuya},
+  title   = {Locally Centered Cyclic Kernels for Higher-Order
+             Independent Component Analysis},
+  journal = {TechRxiv},
+  year    = {2026}
 }
 ```
 
