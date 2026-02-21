@@ -1,27 +1,18 @@
-"""ICALCC: Higher-order cumulant contrasts for scikit-learn FastICA.
+"""ICALCC: Locally centered cyclic contrasts for scikit-learn FastICA.
 
-This module implements the Locally Centered Cyclic (LCC) kernel
-as a scikit-learn compatible ICA estimator. ICALCC extends
-sklearn.decomposition.FastICA with V-statistic contrasts of
-order k = 4, 6, 8 that reach beyond fourth-order cumulant
-structure.
+Drop-in replacement for sklearn.decomposition.FastICA.
+Just replace the import and set K.
 
-V_k formulas (whitened: m1=0, m2=1):
+    from icalcc import ICALCC
+    est = ICALCC(K=6)
+    est.fit(X)
 
-  V_4 = 21/64 - 3*m4/64
+Supported K values: 4, 6, 8, 'fast4', 'fast6', 'fast8',
+                    'tanh', 'exp', 'ltanh', 'lexp', 'skew'.
 
-  V_6 = 145*m3^2/3888 + 115*m4/2592
-        - 5*m6/7776 - 125/648
-
-  V_8 = -7665*m3^2/131072 + 497*m3*m5/262144
-        + 2765*m4^2/2097152 - 18795*m4/524288
-        + 329*m6/524288 - 7*m8/2097152
-        + 117705/1048576
-
-References
-----------
-T. Saito, "Locally Centered Cyclic Kernels for Higher-Order
-Independent Component Analysis," TechRxiv.
+Reference: T. Saito, "Locally Centered Cyclic Kernels for Higher-Order
+Independent Component Analysis," TechRxiv, 2026.
+https://doi.org/10.36227/techrxiv.XXXXXXX
 """
 
 import numpy as np
@@ -85,23 +76,45 @@ def _lcc_h_gprime(y, k):
     return gy, gpy
 
 
+def _fast_h_gprime(y, k):
+    """FastICA(k) nonlinearity: g(y) = y^{k-1}, g'(y) = (k-1)*y^{k-2}.
+
+    Maximises |m_k| = |E[y^k]| using global-mean centering.
+    Provided for matched-order comparison with LCC(k).
+
+    Parameters
+    ----------
+    y : ndarray, shape (N,)
+    k : int (4, 6, or 8)
+
+    Returns
+    -------
+    gy, gpy : ndarray, shape (N,)
+    """
+    gy = y ** (k - 1)
+    gpy = (k - 1) * y ** (k - 2)
+    return gy, gpy
+
+
+def _fast_contrast(x, K=4):
+    """FastICA(k) contrast callable for sklearn's ``fun`` parameter."""
+    if x.ndim == 1:
+        return _fast_h_gprime(x, K)
+    p, N = x.shape
+    gY = np.empty_like(x)
+    gpy = np.empty(p, dtype=x.dtype)
+    for i in range(p):
+        gi, gpi = _fast_h_gprime(x[i], K)
+        gY[i] = gi
+        gpy[i] = gpi.mean()
+    return gY, gpy
+
+
 def _lcc_contrast(x, K=6):
     """LCC contrast callable for sklearn's ``fun`` parameter.
 
     Handles both deflation (1-D input) and parallel (2-D input)
     algorithms.
-
-    Parameters
-    ----------
-    x : ndarray, shape (N,) or (p, N)
-    K : int
-        Cumulant order.
-
-    Returns
-    -------
-    gy : ndarray, same shape as x
-    gpy : ndarray, shape (N,) or (p,)
-        For 2-D input, returns row-wise means of g'.
     """
     if x.ndim == 1:
         return _lcc_h_gprime(x, K)
@@ -115,19 +128,68 @@ def _lcc_contrast(x, K=6):
     return gY, gpy
 
 
-def _skew_contrast(x):
-    """Skewness contrast: g(y) = y|y|, g'(y) = 2|y|.
+def _lcc_bounded_h_gprime(y, G="tanh", batch_size=500):
+    """Locally centered bounded nonlinearity.
 
-    Useful for asymmetric source distributions.
+    Computes the locally centered gradient with bounded kernel G:
+      g(y_i) = (1/B) sum_j G'(y_i - y_j)
+      g'(y_i) = (1/B) sum_j G''(y_i - y_j)
+
+    where j is a random subsample of size B for O(NB) cost.
+
+    For G = 'tanh':  G(u) = log cosh(u),  G'(u) = tanh(u)
+    For G = 'exp':   G(u) = -exp(-u^2/2), G'(u) = u exp(-u^2/2)
 
     Parameters
     ----------
-    x : ndarray, shape (N,) or (p, N)
+    y : ndarray, shape (N,)
+    G : {'tanh', 'exp'}
+    batch_size : int
 
     Returns
     -------
-    gy : ndarray, same shape as x
-    gpy : ndarray, shape (N,) or (p,)
+    gy, gpy : ndarray, shape (N,)
+    """
+    N = len(y)
+    B = min(batch_size, N)
+    step = max(1, N // B)
+    idx = np.arange(0, N, step)[:B]
+    y_batch = y[idx]
+    diff = y[:, None] - y_batch[None, :]
+
+    if G == "tanh":
+        t = np.tanh(diff)
+        gy = t.mean(axis=1)
+        gpy = (1.0 - t * t).mean(axis=1)
+    elif G == "exp":
+        e = np.exp(-0.5 * diff * diff)
+        gy = (diff * e).mean(axis=1)
+        gpy = ((1.0 - diff * diff) * e).mean(axis=1)
+    else:
+        raise ValueError(f"Unknown G: {G}")
+
+    return gy, gpy
+
+
+def _lcc_bounded_contrast(x, G="tanh", batch_size=500):
+    """LCC bounded contrast callable for sklearn's ``fun`` parameter."""
+    if x.ndim == 1:
+        return _lcc_bounded_h_gprime(x, G=G, batch_size=batch_size)
+    p, N = x.shape
+    gY = np.empty_like(x)
+    gpy = np.empty(p, dtype=x.dtype)
+    for i in range(p):
+        gi, gpi = _lcc_bounded_h_gprime(x[i], G=G, batch_size=batch_size)
+        gY[i] = gi
+        gpy[i] = gpi.mean()
+    return gY, gpy
+
+
+def _skew_contrast(x):
+    """Skewness contrast: g(y) = y|y|, g'(y) = 2|y|.
+
+    Experimental. Useful for strongly asymmetric source distributions.
+    Not analyzed in the paper.
     """
     ay = np.abs(x)
     gy = x * ay
@@ -140,28 +202,32 @@ class ICALCC(FastICA):
     """Independent Component Analysis with LCC contrast.
 
     Drop-in replacement for ``sklearn.decomposition.FastICA``
-    that targets higher-order cumulants via the Locally Centered
-    Cyclic (LCC) V-statistic kernel, with optional classical
-    nonlinearities for comparison.
+    that provides locally centered cyclic contrast functions:
+    polynomial contrasts of order 4, 6, 8 and bounded contrasts
+    LCC-tanh and LCC-exp. Classical nonlinearities (tanh, exp)
+    are also available for comparison.
 
     Parameters
     ----------
     n_components : int or None, default=None
         Number of components to extract.
-    K : {4, 6, 8, 'tanh', 'exp', 'skew'}, default=6
+    K : {4, 6, 8, 'fast4', 'fast6', 'fast8', 'tanh', 'exp',
+         'ltanh', 'lexp', 'skew'}, default=6
         Contrast function.
 
-        - ``4``: LCC V_4, equivalent to ``fun='cube'`` (kurtosis).
-        - ``6``: LCC V_6, jointly exploits m_3, m_4, m_6.
-          Recommended for most applications.
-        - ``8``: LCC V_8, uses moments up to order 8.
-          Best for symmetric sources with finite m_8.
+        - ``4``: LCC polynomial order 4 (equivalent to FastICA(4)).
+        - ``6``: LCC polynomial order 6, exploits m_3, m_4, m_6.
+          Recommended for super-Gaussian sources of moderate kurtosis.
+        - ``8``: LCC polynomial order 8, uses moments up to order 8.
+          Best for symmetric sources with low kurtosis and finite m_8.
+        - ``'fast4'``: FastICA(4), g(y) = y^3.
+        - ``'fast6'``: FastICA(6), g(y) = y^5.
+        - ``'fast8'``: FastICA(8), g(y) = y^7.
         - ``'tanh'``: logcosh contrast, g(y) = tanh(y).
-          Robust general-purpose baseline.
         - ``'exp'``: Gaussian contrast, g(y) = y exp(-y^2/2).
-          Good for super-Gaussian sources.
-        - ``'skew'``: Skewness contrast, g(y) = y|y|.
-          Exploits asymmetry in skewed sources.
+        - ``'ltanh'``: Locally centered tanh.
+        - ``'lexp'``: Locally centered exp.
+        - ``'skew'``: Skewness contrast, g(y) = y|y|. Experimental.
     algorithm : {'parallel', 'deflation'}, default='parallel'
         FastICA algorithm variant.
     whiten : str or False, default='unit-variance'
@@ -182,7 +248,9 @@ class ICALCC(FastICA):
     components_ : ndarray, shape (n_components, n_features)
         Unmixing matrix.
     mixing_ : ndarray, shape (n_features, n_components)
-        Mixing matrix (pseudo-inverse of components_).
+        Mixing matrix.
+    converged_ : bool
+        True if FastICA converged within max_iter iterations.
     n_iter_ : int
         Number of iterations used.
 
@@ -196,28 +264,23 @@ class ICALCC(FastICA):
     >>> X = (A @ S).T
     >>> ica = ICALCC(n_components=4, K=6, random_state=0)
     >>> S_hat = ica.fit_transform(X)
-    >>> # Classical tanh baseline for comparison
-    >>> ica_tanh = ICALCC(n_components=4, K='tanh', random_state=0)
-    >>> S_tanh = ica_tanh.fit_transform(X)
 
     References
     ----------
     T. Saito, "Locally Centered Cyclic Kernels for Higher-Order
-    Independent Component Analysis," IEEE Signal Processing Letters,
-    2025.
+    Independent Component Analysis," TechRxiv, 2026.
+    https://doi.org/10.36227/techrxiv.XXXXXXX
 
     See Also
     --------
     sklearn.decomposition.FastICA : Base class.
     """
 
-    _VALID_K = (4, 6, 8, "tanh", "exp", "skew")
-
-    # sklearn built-in contrasts
-    _SKLEARN_MAP = {
-        "tanh": "logcosh",
-        "exp": "exp",
-    }
+    _VALID_K = (4, 6, 8, "fast4", "fast6", "fast8",
+                "tanh", "exp", "ltanh", "lexp", "skew")
+    _SKLEARN_MAP = {"tanh": "logcosh", "exp": "exp"}
+    _FAST_MAP = {"fast4": 4, "fast6": 6, "fast8": 8}
+    _LCC_BOUNDED_MAP = {"ltanh": "tanh", "lexp": "exp"}
 
     def __init__(
         self,
@@ -243,6 +306,12 @@ class ICALCC(FastICA):
         elif K == "skew":
             fun = _skew_contrast
             fun_args = {}
+        elif K in self._FAST_MAP:
+            fun = _fast_contrast
+            fun_args = dict(K=self._FAST_MAP[K])
+        elif K in self._LCC_BOUNDED_MAP:
+            fun = _lcc_bounded_contrast
+            fun_args = dict(G=self._LCC_BOUNDED_MAP[K])
         else:
             fun = _lcc_contrast
             fun_args = dict(K=K)
@@ -261,12 +330,7 @@ class ICALCC(FastICA):
         )
 
     def fit(self, X, y=None):
-        """Fit the model, tracking convergence.
-
-        Sets ``self.converged_`` to True if FastICA converged
-        within ``max_iter`` iterations, False otherwise.
-        All ConvergenceWarnings are suppressed.
-        """
+        """Fit the model, tracking convergence."""
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", ConvergenceWarning)
             super().fit(X, y)
