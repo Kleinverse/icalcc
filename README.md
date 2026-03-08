@@ -74,14 +74,16 @@ the underlying LCC kernel paper:
   title   = {{ICALCC}: Locally Centered Contrast Functions for
              {FastICA} with {GPU} Acceleration},
   journal = {TechRxiv},
-  year    = {2026}
+  year    = {2026},
+  doi     = {10.36227/techrxiv.177203264.46969730}
 }
 @article{saito2026lcc,
   author  = {Saito, Tetsuya},
   title   = {Locally Centered Cyclic Kernels for Higher-Order
              Independent Component Analysis},
   journal = {TechRxiv},
-  year    = {2026}
+  year    = {2026},
+  doi     = {10.36227/techrxiv.177220376.62411390}
 }
 ```
 ## License
