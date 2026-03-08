@@ -12,7 +12,7 @@ Supported K values: 4, 6, 8, 'fast4', 'fast6', 'fast8',
 
 Reference: T. Saito, "Locally Centered Cyclic Kernels for Higher-Order
 Independent Component Analysis," TechRxiv, 2026.
-https://doi.org/10.36227/techrxiv.XXXXXXX
+https://doi.org/10.36227/techrxiv.177203264.46969730
 """
 
 import numpy as np
