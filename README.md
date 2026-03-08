@@ -8,12 +8,10 @@ from icalcc import ICALCC
 ica = ICALCC(n_components=4, K='ltanh', random_state=0)
 S_hat = ica.fit_transform(X)
 ```
-
 ## Installation
 ```bash
 pip install icalcc
 ```
-
 ## Supported K Values
 | K | Description |
 |---|---|
@@ -24,47 +22,50 @@ pip install icalcc
 | `8` | Polynomial LCC order 8, couples moments up to order 8 |
 | `'tanh'` | Classical logcosh contrast (scikit-learn default) |
 | `'exp'` | Classical Gaussian contrast |
-| `'skew'` | Classical cube contrast |
-
+| `'cube'` | Classical cube contrast (`'skew'` accepted as alias) |
 ## Usage
 ```python
 from icalcc import ICALCC
-
 # Bounded LCC-tanh (recommended for heavy-tailed or skewed sources)
 ica = ICALCC(n_components=4, K='ltanh', random_state=0)
 S_hat = ica.fit_transform(X)
-
 # Bounded LCC-exp (Rényi-2 entropy interpretation)
 ica = ICALCC(n_components=4, K='lexp', random_state=0)
 S_hat = ica.fit_transform(X)
-
 # Polynomial LCC order 8 (near-Gaussian sources)
 ica = ICALCC(n_components=4, K=8, random_state=0)
 S_hat = ica.fit_transform(X)
-
 # Classical FastICA baseline
 ica = ICALCC(n_components=4, K='tanh', random_state=0)
 S_hat = ica.fit_transform(X)
 ```
-
 ## Convergence tracking
 ```python
 ica.fit(X)
 print(ica.converged_)  # True if all components converged
 ```
-
+## Reconstruction MSE
+```python
+ica = ICALCC(n_components=3, K='lexp', random_state=0)
+ica.fit(X)
+mse = ica.reconstruction_mse(X)
+print(f"Reconstruction MSE: {mse:.6f}")
+```
+`reconstruction_mse` transforms `X` to sources and reconstructs via
+the mixing matrix in the original feature space. Meaningful only in
+the undercomplete case (`n_components < n_features`); returns 0.0
+exactly when `n_components == n_features`.
+Inherited automatically by
+[gpuicalcc](https://github.com/Kleinverse/gpuicalcc).
 ## See Also
 - [gpuicalcc](https://github.com/Kleinverse/gpuicalcc) —
   PyTorch GPU-accelerated extension (40–48× speedup for bounded contrasts)
 - [Experiment code](https://github.com/Kleinverse/research/tree/main/icalcc)
-
 ## Requirements
 - Python ≥ 3.9
 - numpy ≥ 1.24
 - scikit-learn ≥ 1.3
-
 ## Citation
-
 If you use this package, please cite both the software paper and
 the underlying LCC kernel paper:
 ```bibtex
@@ -73,19 +74,26 @@ the underlying LCC kernel paper:
   title   = {{ICALCC}: Locally Centered Contrast Functions for
              {FastICA} with {GPU} Acceleration},
   journal = {TechRxiv},
-  year    = {2026},
-  doi     = {10.36227/techrxiv.177220376.62411390}
+  year    = {2026}
 }
-
 @article{saito2026lcc,
   author  = {Saito, Tetsuya},
   title   = {Locally Centered Cyclic Kernels for Higher-Order
              Independent Component Analysis},
   journal = {TechRxiv},
-  year    = {2026},
-  doi     = {10.36227/techrxiv.177203264.46969730}
+  year    = {2026}
 }
 ```
-
 ## License
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+## Changelog
+### 0.1.4
+- Added `reconstruction_mse(X)` method to `ICALCC`: computes mean
+  squared reconstruction error in the original feature space via
+  `inverse_transform`. Inherited by `GPUICALCC` without changes.
+- Renamed contrast `'skew'` to `'cube'` for clarity; `'skew'` is
+  retained as a legacy alias.
+
+### 0.1.3
+- Initial public release.
