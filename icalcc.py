@@ -277,7 +277,7 @@ class ICALCC(FastICA):
     """
 
     _VALID_K = (4, 6, 8, "fast4", "fast6", "fast8",
-                "tanh", "exp", "ltanh", "lexp", "skew")
+                "tanh", "exp", "ltanh", "lexp", "skew", "cube")
     _SKLEARN_MAP = {"tanh": "logcosh", "exp": "exp"}
     _FAST_MAP = {"fast4": 4, "fast6": 6, "fast8": 8}
     _LCC_BOUNDED_MAP = {"ltanh": "tanh", "lexp": "exp"}
@@ -295,6 +295,9 @@ class ICALCC(FastICA):
         whiten_solver="svd",
         random_state=None,
     ):
+        if K == "cube":
+            K = "skew"
+        
         if K not in self._VALID_K:
             raise ValueError(
                 f"K must be one of {self._VALID_K}, got {K}")
@@ -348,3 +351,24 @@ class ICALCC(FastICA):
             issubclass(w.category, ConvergenceWarning)
             for w in caught)
         return result
+
+    def reconstruction_mse(self, X: np.ndarray) -> float:
+        """Mean squared reconstruction error in the original feature space.
+
+        Transforms X to sources via the fitted unmixing matrix, then
+        reconstructs via inverse_transform (mixing_ and mean_).
+        Requires the model to be fitted first.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Observed data in the original feature space.
+
+        Returns
+        -------
+        float
+            Mean squared error between X and its ICA reconstruction.
+        """
+        S_hat = self.transform(X)
+        X_hat = self.inverse_transform(S_hat)
+        return float(np.mean((np.asarray(X) - X_hat) ** 2))
