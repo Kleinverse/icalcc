@@ -1,4 +1,4 @@
-# icalcc
+# ICALCC
 
 ![PyPI - Version](https://img.shields.io/pypi/v/icalcc)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/icalcc)
