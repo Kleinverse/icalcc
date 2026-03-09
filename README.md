@@ -1,4 +1,11 @@
 # icalcc
+
+![PyPI - Version](https://img.shields.io/pypi/v/icalcc)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/icalcc)
+![PyPI - License](https://img.shields.io/pypi/l/icalcc)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/icalcc)
+
+
 Locally centered contrast functions for scikit-learn FastICA.
 Drop-in replacement for `sklearn.decomposition.FastICA` with
 bounded LCC-tanh and LCC-exp contrasts, plus polynomial LCC
